@@ -1,2 +1,5 @@
 .env
 node_modules
+/chat-ui/node_modules
+/chat-ui/.eslintcache
+.eslintcache
