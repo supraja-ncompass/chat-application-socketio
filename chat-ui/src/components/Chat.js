@@ -1,18 +1,39 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 const Chat = ({ socket, userName, room, goback }) => {
   const [message, setMessage] = useState("");
+  const [allMessageInfo, setAllMessageInfo] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
 
-  const sendMessage = () => {
+  const chatEndRef = useRef(null);
+
+  const sendMessage = async () => {
     if (message !== "") {
-      console.log(message);
+      await socket.emit("sendMessage", message);
       setMessage("");
     }
   };
 
-  const leaveChatRoom = () => {
+  const leaveChatRoom = async () => {
+    await socket.disconnect();
     goback();
   };
+
+  useEffect(() => {
+    socket.on("message", (msgInfo) =>
+      setAllMessageInfo((prev) => [...prev, msgInfo])
+    );
+    socket.on("online-users", (usersInfo) => {
+      setAllUsers(usersInfo);
+    });
+  }, [socket]);
+
+  useEffect(() => {
+    chatEndRef?.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "end",
+    });
+  }, [allMessageInfo]);
 
   return (
     <div className="container w-6/12 p-3 border border-slate-900 rounded-md">
@@ -31,21 +52,33 @@ const Chat = ({ socket, userName, room, goback }) => {
         <div className="flex flex-col items-center border border-zinc-800 w-1/6">
           <h2 className="text-base font-bold">Users Online</h2>
           <ul>
-            <li>Ari</li>
+            {allUsers.map((u) => (
+              <li key={u.id}>{u.name}</li>
+            ))}
           </ul>
         </div>
 
         <div className=" w-5/6">
           <div className="h-[90%] overflow-auto border border-stone-700">
-            <div className="mx-2 my-1 flex justify-start">
-              <div className="p-1 w-72 border border-zinc-800 rounded-md">
-                <div className="flex justify-between text-sm font-medium">
-                  <p>Chat bot</p>
-                  <p>17:46</p>
+            {allMessageInfo.map((msgInfo, i) => {
+              return (
+                <div
+                  key={i}
+                  className={`mx-2 my-1 flex ${
+                    msgInfo.user === userName ? "justify-end" : "justify-start"
+                  }`}
+                >
+                  <div className="p-1 w-72 border border-zinc-800 rounded-md">
+                    <div className="flex justify-between text-sm font-medium">
+                      <p>{msgInfo.user}</p>
+                      <p>{msgInfo.time}</p>
+                    </div>
+                    <p>{msgInfo.text}</p>
+                  </div>
                 </div>
-                <p>Welcome to Chat.io</p>
-              </div>
-            </div>
+              );
+            })}
+            <div ref={chatEndRef} />
           </div>
           <div className="h-[10%] mt-1 flex justify-around">
             <input

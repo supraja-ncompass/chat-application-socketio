@@ -1,21 +1,27 @@
 import { useState } from "react";
+import io from "socket.io-client";
 import Chat from "./components/Chat";
+let socket;
 
 const App = () => {
-  const [userName, setUserName] = useState("");
+  const [name, setName] = useState("");
   const [room, setRoom] = useState("");
   const [isJoined, setIsJoined] = useState(false);
 
   const joinUserToRoom = (e) => {
     e.preventDefault();
-    if (userName !== "" && room !== "") {
+    if (name !== "" && room !== "") {
+      socket = io.connect("http://localhost:5000");
+      socket.emit("join", { name, room }, function (e) {
+        console.log(e);
+      });
       setIsJoined(true);
     }
   };
 
   const goback = () => {
     setIsJoined(false);
-    setUserName("");
+    setName("");
     setRoom("");
   };
   return (
@@ -30,8 +36,8 @@ const App = () => {
             className="border border-slate-900 rounded-sm w-72 p-2"
             type="text"
             placeholder="Name...."
-            value={userName}
-            onChange={(e) => setUserName(e.target.value)}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
             required
           />
           <input
@@ -50,7 +56,7 @@ const App = () => {
           </button>
         </form>
       ) : (
-        <Chat userName={userName} room={room} goback={goback} />
+        <Chat socket={socket} userName={name} room={room} goback={goback} />
       )}
     </div>
   );
